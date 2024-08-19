@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function QuestionForm(props) {
+function QuestionForm({ onAdd }) {
   const [formData, setFormData] = useState({
     prompt: "",
     answer1: "",
@@ -17,15 +17,48 @@ function QuestionForm(props) {
     });
   }
 
-  function handleSubmit(event) {
+  async function handleSubmit(event) {
     event.preventDefault();
-    console.log(formData);
+    const { prompt, correctIndex, ...answers } = formData;
+    const answerArray = [answers.answer1, answers.answer2, answers.answer3, answers.answer4];
+
+    const newQuestion = {
+      prompt,
+      answers: answerArray,
+      correctIndex: parseInt(correctIndex, 10),
+    };
+
+    try {
+      const response = await fetch('http://localhost:4000/questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newQuestion),
+      });
+
+      if (response.ok) {
+        const savedQuestion = await response.json();
+        onAdd(savedQuestion); // Notify parent component about the new question
+        setFormData({
+          prompt: "",
+          answer1: "",
+          answer2: "",
+          answer3: "",
+          answer4: "",
+          correctIndex: 0,
+        });
+      } else {
+        console.error('Error adding question:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error adding question:', error);
+    }
   }
 
   return (
     <section>
       <h1>New Question</h1>
       <form onSubmit={handleSubmit}>
+        {/* Form fields */}
         <label>
           Prompt:
           <input

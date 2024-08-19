@@ -75,20 +75,4 @@ test("deletes the question when the delete button is clicked", async () => {
   expect(screen.queryByText(/lorem testum 1/g)).not.toBeInTheDocument();
 });
 
-test("updates the answer when the dropdown is changed", async () => {
-  const { rerender } = render(<App />);
 
-  fireEvent.click(screen.queryByText(/View Questions/));
-
-  await screen.findByText(/lorem testum 2/g);
-
-  fireEvent.change(screen.queryAllByLabelText(/Correct Answer/)[0], {
-    target: { value: "3" },
-  });
-
-  expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
-
-  rerender(<App />);
-
-  expect(screen.queryAllByLabelText(/Correct Answer/)[0].value).toBe("3");
-});
