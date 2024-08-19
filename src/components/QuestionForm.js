@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 
 function QuestionForm({ onAdd }) {
   const [formData, setFormData] = useState({
@@ -9,6 +9,16 @@ function QuestionForm({ onAdd }) {
     answer4: "",
     correctIndex: 0,
   });
+
+  // Create a ref to track if the component is mounted
+  const isMounted = React.useRef(true);
+
+  // Cleanup function to set the ref to false when unmounted
+  useEffect(() => {
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   function handleChange(event) {
     setFormData({
@@ -28,30 +38,43 @@ function QuestionForm({ onAdd }) {
       correctIndex: parseInt(correctIndex, 10),
     };
 
+    const controller = new AbortController();
+    const { signal } = controller;
+
     try {
       const response = await fetch('http://localhost:4000/questions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newQuestion),
+        signal,
       });
 
       if (response.ok) {
         const savedQuestion = await response.json();
-        onAdd(savedQuestion); // Notify parent component about the new question
-        setFormData({
-          prompt: "",
-          answer1: "",
-          answer2: "",
-          answer3: "",
-          answer4: "",
-          correctIndex: 0,
-        });
+        if (isMounted.current) {
+          onAdd(savedQuestion); // Notify parent component about the new question
+          setFormData({
+            prompt: "",
+            answer1: "",
+            answer2: "",
+            answer3: "",
+            answer4: "",
+            correctIndex: 0,
+          });
+        }
       } else {
         console.error('Error adding question:', response.statusText);
       }
     } catch (error) {
-      console.error('Error adding question:', error);
+      if (error.name !== 'AbortError') {
+        console.error('Error adding question:', error);
+      }
     }
+
+    // Abort the request when the component unmounts
+    return () => {
+      controller.abort();
+    };
   }
 
   return (
